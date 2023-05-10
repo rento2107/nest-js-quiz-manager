@@ -1,32 +1,44 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Post,
-  Request,
-  UseGuards,
-} from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, Param, Post, Query, Session, UseGuards } from '@nestjs/common';
+import { User } from 'src/database/postgres/user/user.database.service';
+import { AuthResponse, AuthSignInRequest, AuthSignUpRequest, AuthTokenResponse } from './dto/auth.dt';
 import { AuthService } from './auth.service';
-import { LoginDto } from './dto/login.dto';
-import { JwtAuthGuard } from './jwt-auth.guard';
-import { LocalAuthGuard } from './local-auth.guard';
+import { AuthGuard } from '@nestjs/passport';
+import { LocalAuthGurad } from 'src/common/gaurds/local-auth.guard';
+import { Auth } from 'src/common/decorator/auth.guard';
 
-@ApiTags('Auth')
+
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+    constructor(private readonly authService: AuthService){}
 
-  @UseGuards(LocalAuthGuard)
-  @Post('login')
-  async login(@Request() req, @Body() loginDto: LoginDto): Promise<any> {
-    return this.authService.generateToken(req.user);
-  }
+    @Post('sign-up')
+    async signUp( @Body() signUpRequest: AuthSignUpRequest): Promise<AuthResponse>{
+        const model = await this.authService.signUp(signUpRequest)
+        return model
+    }
 
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
-  @Get('user')
-  async user(@Request() req): Promise<any> {
-    return req.user;
-  }
+    @Auth()
+    @Post('sign-in')
+    async signIn(@Body() signInRequest: AuthSignInRequest){
+        return signInRequest
+    }
+
+    @Post('log-out/:userName')
+    async logOut(@Param('userName') userName: string){
+        const response = await this.authService.logOut(userName)
+        return response
+    }
+
+    @Post('refresh-token')
+    async refreshToken(){}
+
+    @Auth()
+    @Get('test')
+    getUser(@Session() session: Record<string, any>){
+        console.log(session)
+        console.log(session.id)
+        session.authenticate = true
+        return session
+    }
+    
 }

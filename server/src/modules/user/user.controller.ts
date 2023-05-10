@@ -1,30 +1,21 @@
-import { Body, Controller, Post } from '@nestjs/common';
-import {
-  ApiBadRequestResponse,
-  ApiCreatedResponse,
-  ApiTags,
-} from '@nestjs/swagger';
-import { SETTINGS } from 'src/app.utils';
+import { Body, Controller, Get, Post } from '@nestjs/common';
 
-import { UserRegisterRequestDto } from './dto/user-register.req.dto';
-import { User } from './user.entity';
 import { UserService } from './user.service';
+import { UsersDbService } from 'src/database/postgres/user/user.database.service';
+import { UserEntity } from 'src/database/postgres/user/entity/user.entity';
 
-@ApiTags('User')
 @Controller('user')
 export class UserController {
-  constructor(private userService: UserService) {}
+  constructor(private readonly userDbService: UsersDbService) {}
 
-  @Post('/register')
-  @ApiCreatedResponse({
-    description: 'Created user object as response',
-    type: User,
-  })
-  @ApiBadRequestResponse({ description: 'User cannot register. Try again!' })
-  async doUserRegistration(
-    @Body(SETTINGS.VALIDATION_PIPE)
-    userRegister: UserRegisterRequestDto,
-  ): Promise<User> {
-    return await this.userService.doUserRegistration(userRegister);
+  @Post('/sign-up')
+  async doUserRegistration(@Body() user: UserEntity){
+    const model = await this.userDbService.postUser(user)
+    return model
+  }
+
+  @Get('')
+  helloWorld(){
+    return 'hello world'
   }
 }
